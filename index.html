@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Kalender 2026</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #f44336, #ff9800);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #bbb;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px 30px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ff9800;
+    }
+
+    .stat-label {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      max-width: 600px;
+      margin: 40px auto;
+    }
+
+    .door {
+      height: 150px;
+      background: linear-gradient(135deg, #b71c1c, #f44336);
+      border: 4px solid #ffd700;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .door::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+      transform: translate(0, 0);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .door:hover:not(.locked) {
+      transform: scale(1.08);
+      box-shadow: 0 12px 25px rgba(244, 67, 54, 0.6);
+    }
+
+    .door:hover:not(.locked)::before {
+      opacity: 1;
+    }
+
+    .door.locked {
+      background: linear-gradient(135deg, #333, #555);
+      border-color: #666;
+      cursor: not-allowed;
+      filter: brightness(0.6);
+    }
+
+    .door.opened {
+      background: linear-gradient(135deg, #4caf50, #8bc34a);
+      border-color: #fff;
+    }
+
+    .door-day {
+      font-size: 3rem;
+      font-weight: bold;
+      z-index: 2;
+    }
+
+    .door-date {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 5px;
+      z-index: 2;
+    }
+
+    .door.opened .door-day {
+      color: #fff;
+    }
+
+    .door.locked .door-date {
+      display: none;
+    }
+
+    .lock-icon {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.5rem;
+      z-index: 3;
+    }
+
+    .message {
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(76, 175, 80, 0.2);
+      border: 1px solid #4caf50;
+      border-radius: 8px;
+      color: #81c784;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎥 YouTube Kalender</h1>
+  <p class="subtitle">18. Mai - 23. Mai 2026 | Öffnet täglich um 06:00 Uhr</p>
+
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-number" id="opened-count">0</div>
+      <div class="stat-label">Türchen geöffnet</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number" id="total-count">6</div>
+      <div class="stat-label">Insgesamt</div>
+    </div>
+  </div>
+
+  <div class="calendar" id="calendar"></div>
+  <div class="message" id="message">✅ Alle Türchen geöffnet! Gratuliere!</div>
+
+  <script>
+    const youtubeLinks = {
+      18: "https://youtube.com/DEIN_LINK_1",
+      19: "https://youtube.com/DEIN_LINK_2",
+      20: "https://youtube.com/DEIN_LINK_3",
+      21: "https://youtube.com/DEIN_LINK_4",
+      22: "https://youtube.com/DEIN_LINK_5",
+      23: "https://youtube.com/DEIN_LINK_6"
+    };
+
+    const monthNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+    function canOpenDoor(day) {
+      const now = new Date();
+      const doorDate = new Date(2026, 4, day); // May is month 4 (0-indexed)
+      doorDate.setHours(6, 0, 0, 0);
+
+      return now >= doorDate;
+    }
+
+    function getFormattedDate(day) {
+      return `${day}. Mai`;
+    }
+
+    function updateStats() {
+      const opened = Object.keys(localStorage)
+        .filter(key => key.startsWith('door_'))
+        .length;
+      
+      document.getElementById('opened-count').textContent = opened;
+      
+      if (opened === 6) {
+        document.getElementById('message').classList.add('show');
+      }
+    }
+
+    function initCalendar() {
+      const calendar = document.getElementById('calendar');
+      
+      for (let day = 18; day <= 23; day++) {
+        const door = document.createElement('div');
+        const canOpen = canOpenDoor(day);
+        const isOpened = localStorage.getItem(`door_${day}`) === 'true';
+
+        door.className = `door ${!canOpen ? 'locked' : ''} ${isOpened ? 'opened' : ''}`;
+        door.innerHTML = `
+          <div class="door-day">${day}</div>
+          <div class="door-date">${getFormattedDate(day)}</div>
+          ${!canOpen ? '<div class="lock-icon">🔒</div>' : ''}
+        `;
+
+        door.onclick = () => {
+          if (!canOpen) {
+            const doorDate = new Date(2026, 4, day);
+            doorDate.setHours(6, 0, 0, 0);
+            const timeLeft = doorDate - new Date();
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            alert(`🔒 Dieses Türchen öffnet sich in ${hours}h ${minutes}m!`);
+            return;
+          }
+
+          if (confirm(`Türchen ${day} öffnen?`)) {
+            localStorage.setItem(`door_${day}`, 'true');
+            door.classList.add('opened');
+            updateStats();
+            window.open(youtubeLinks[day], '_blank');
+          }
+        };
+
+        calendar.appendChild(door);
+      }
+
+      updateStats();
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initCalendar);
+
+    // Update stats every minute to reflect countdown changes
+    setInterval(updateStats, 60000);
+  </script>
+</body>
+</html>
